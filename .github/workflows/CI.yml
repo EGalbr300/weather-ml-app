@@ -1,1 +1,43 @@
-Insert Here
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest tests/test_app.py
+
+      - name: Run model tests
+        run: pytest tests/test_model.py
+
+      - name: Build Docker image
+        run: docker build -t egalbr300/weather-ml-app:${{ github.sha }} .
+
+      - name: Test Docker container
+        run: docker run --rm egalbr300/weather-ml-app:${{ github.sha }} python3 -c "import app"
+
+      - name: Push to DockerHub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          docker push egalbr300/weather-ml-app:${{ github.sha }}
