@@ -15,11 +15,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Create virtual environment and install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          sudo pip3 install -r requirements.txt
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run smoke tests
         run: python3 -m unittest tests/smoke_test.py
