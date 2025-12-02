@@ -22,11 +22,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run unit tests
-        run: pytest tests/test_app.py
+      - name: Run smoke tests
+        run: pytest tests/smoke_test.py
 
-      - name: Run model tests
-        run: pytest tests/test_model.py
+      - name: Run unit tests
+        run: pytest tests/unit_test.py
+
+      - name: Run integration tests
+        run: pytest tests/integration_test.py
 
       - name: Build Docker image
         run: docker build -t egalbr300/weather-ml-app:${{ github.sha }} .
