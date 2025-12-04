@@ -1,8 +1,5 @@
 name: CI Pipeline
-#please
-#please
-#please
-#please
+# Pipeline Start
 on:
   push:
     branches: [ main ]
