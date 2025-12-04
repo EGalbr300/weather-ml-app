@@ -20,10 +20,8 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+      - name: Update Minikube Context
+        run: minikube update-context
 
       - name: Deploy to Kubernetes
         run: |
