@@ -20,8 +20,10 @@ jobs:
         with:
           version: 'latest'
 
-      - name: Update Minikube Context
-        run: minikube update-context
+      - name: Reset and Update Minikube Context
+        run: |
+          rm -f $HOME/.kube/config
+          minikube update-context
 
       - name: Deploy to Kubernetes
         run: |
