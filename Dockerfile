@@ -3,6 +3,9 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
+# Version Label
+LABEL version="v2"
+
 # Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
