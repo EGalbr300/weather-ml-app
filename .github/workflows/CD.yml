@@ -33,3 +33,4 @@ jobs:
           kubectl apply -f k8s/deployment.yaml
           kubectl set image deployment/weather-ml-app weather-ml-app=egalbr300/weather-ml-app:${{ github.sha }}
           kubectl rollout status deployment/weather-ml-app
+
