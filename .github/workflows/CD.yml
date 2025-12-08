@@ -1,45 +1,57 @@
-name: CD Pipeline
+name: CD – Deploy to Kubernetes
 
 on:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types:
-      - completed
-
-env:
-  DOCKER_IMAGE: egalbr300/weather-ml-app
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
+  deploy:
+    name: Deploy to Production Kubernetes
+    runs-on: self-hosted  
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Build and Push Docker Image
+      - name: Pull Docker Image
         run: |
-          docker build -t $DOCKER_IMAGE:${{ github.sha }} .
-          docker push $DOCKER_IMAGE:${{ github.sha }}
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest
 
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-
-      - name: Set Kubeconfig
+      - name: Ensure Minikube is Running
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
+          minikube status || minikube start --force
 
-      - name: Deploy
+      - name: Set kubectl context
         run: |
-          kubectl create deployment weather-ml-app \
-            --image=$DOCKER_IMAGE:${{ github.sha }} \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl rollout status deployment/weather-ml-app
+          kubectl config use-context minikube
+
+      - name: Apply Deployment
+        run: |
+          kubectl apply -f k8s/deployment.yaml
+
+      - name: Apply Service
+        run: |
+          kubectl apply -f k8s/service.yaml
+
+      - name: Set new image version for rolling update
+        run: |
+          kubectl set image deployment/weather-ml-app weather-ml-app=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/weather-ml-app --timeout=120s
+
+      - name: Get service info
+        run: |
+          echo "Minikube IP:"
+          minikube ip
+          echo "K8s services:"
+          kubectl get svc -o wide
