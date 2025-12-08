@@ -4,7 +4,7 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Version Label
-LABEL version="v2"
+LABEL version="v1"
 
 # Install dependencies
 COPY requirements.txt .
