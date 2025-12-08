@@ -3,6 +3,9 @@ import pickle
 import numpy as np
 import time
 
+with open('model/model.pkl', 'rb') as f:
+    model = pickle.load(f)
+
 app = Flask(__name__)
 
 weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazy', 'misty', 'rainy', 'smokey', 'thunderstorm']
