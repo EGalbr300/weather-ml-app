@@ -1,53 +1,35 @@
-name: CD – Deploy to Kubernetes
+
+name: CD Pipeline
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
 
 jobs:
   deploy:
-    name: Deploy to Production Kubernetes
-    runs-on: self-hosted  
+    runs-on: [self-hosted, production]
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          version: 'latest'
 
-      - name: Pull Docker Image
-        run: |
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest
+      - name: Verify cluster access
+        run: kubectl cluster-info
 
-      - name: Ensure Minikube is Running
+      - name: Deploy to Kubernetes
         run: |
-          minikube status || minikube start --force
+          kubectl set image deployment/weather-ml-app \
+            weather-ml-app=egalbr300/weather-ml-app:${{ github.sha }}
+          kubectl rollout status deployment/weather-ml-app
 
-      - name: Set kubectl context
-        run: |
-          kubectl config use-context minikube
-
-      - name: Apply Deployment
-        run: |
-          kubectl apply -f k8s/deployment.yaml
-
-      - name: Apply Service
-        run: |
-          kubectl apply -f k8s/service.yaml
-
-      - name: Set new image version for rolling update
-        run: |
-          kubectl set image deployment/weather-ml-app weather-ml-app=${{ secrets.DOCKERHUB_USERNAME }}/weather-ml-app:latest
-
-      - name: Verify rollout
-        run: |
-          kubectl rollout status deployment/weather-ml-app --timeout=120s
 
       - name: Get service info
         run: |
